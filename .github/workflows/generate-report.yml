@@ -23,7 +23,7 @@ jobs:
         run: python src/slack_triggers_test.py
 
       - name: Upload report artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pokemon-report
           path: outputs/pokemon_stats.xlsx
