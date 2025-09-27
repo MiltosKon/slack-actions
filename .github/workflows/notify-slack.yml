@@ -1,0 +1,40 @@
+name: Generate Pokémon Report
+
+on:
+  workflow_dispatch:    # Enables manual trigger
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r pip-requirements.txt
+
+      - name: Run report script
+        run: python src/slack_triggers_test.py
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pokemon-report
+          path: outputs/pokemon_stats.xlsx
+
+      - name: Send Slack notification with artifact link
+        uses: slackapi/slack-github-action@v2
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          payload: |
+            {
+              "text": "Daily Pokémon report generated. [Download artifact](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}#artifacts)"
+            }
