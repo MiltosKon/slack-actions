@@ -23,6 +23,9 @@ def get_video_data(url):
         'writeautomaticsub': True,
         'subtitleslangs': ['en'],
     }
+    
+    if os.path.exists('yt_cookies.txt'):
+        ydl_opts['cookiefile'] = 'yt_cookies.txt'
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
