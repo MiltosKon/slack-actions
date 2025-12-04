@@ -2,71 +2,83 @@ import os
 import re
 import time
 import requests
-from bs4 import BeautifulSoup
+import yt_dlp
 from slack_bolt import App
 from dotenv import load_dotenv
-from youtube_transcript_api import YouTubeTranscriptApi
 import google.generativeai as genai
 
 load_dotenv()
 
-# --- YouTube Utils ---
+# --- YouTube Utils (yt-dlp) ---
 
-def get_video_id(url):
+def get_video_data(url):
     """
-    Extracts the video ID from a YouTube URL.
+    Fetches video metadata (title, description) and transcript using yt-dlp.
+    Returns: (title, description, transcript_text)
     """
-    regex = r"(?:v=|\/)([0-9A-Za-z_-]{11}).*"
-    match = re.search(regex, url)
-    if match:
-        return match.group(1)
-    return None
+    ydl_opts = {
+        'quiet': True,
+        'skip_download': True,
+        'writesubtitles': True,
+        'writeautomaticsub': True,
+        'subtitleslangs': ['en'],
+    }
+    
+    if os.path.exists('yt_cookies.txt'):
+        ydl_opts['cookiefile'] = 'yt_cookies.txt'
 
-def get_transcript(video_id):
-    """
-    Fetches the transcript for a given video ID.
-    Returns a single string of the transcript text.
-    """
     try:
-        transcript_list = YouTubeTranscriptApi().fetch(video_id)
-        transcript_text = " ".join([snippet.text for snippet in transcript_list])
-        return transcript_text
-    except Exception as e:
-        print(f"Error fetching transcript: {e}")
-        return None
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+            
+            title = info.get('title', 'Unknown Title')
+            description = info.get('description', 'No description found.')
+            
+            # Transcript Extraction
+            transcript_text = ""
+            captions = info.get('automatic_captions') or info.get('subtitles')
+            
+            if captions:
+                # Try to find English captions
+                # 'en' is standard, but sometimes it's 'en-orig' or 'en-US'
+                # We'll look for any key starting with 'en'
+                en_key = next((k for k in captions.keys() if k.startswith('en')), None)
+                
+                if en_key:
+                    tracks = captions[en_key]
+                    # Prefer 'json3' format for easy parsing, fallback to 'vtt'
+                    # We need the URL to fetch it
+                    track_url = next((t['url'] for t in tracks if t['ext'] == 'json3'), None)
+                    
+                    if track_url:
+                        try:
+                            r = requests.get(track_url)
+                            r.raise_for_status()
+                            data = r.json()
+                            
+                            # Parse JSON3 format
+                            # Structure: {'events': [{'segs': [{'utf8': 'text'}]}]}
+                            text_parts = []
+                            for event in data.get('events', []):
+                                if 'segs' in event:
+                                    for seg in event['segs']:
+                                        if 'utf8' in seg:
+                                            text_parts.append(seg['utf8'])
+                            transcript_text = "".join(text_parts) # json3 segments often include spaces
+                        except Exception as e:
+                            print(f"Error fetching/parsing transcript JSON: {e}")
+                    else:
+                        print("No JSON3 caption track found.")
+                else:
+                    print("No English captions found.")
+            else:
+                print("No captions found.")
 
-def get_video_details(video_id):
-    """
-    Fetches video title and description using requests and BeautifulSoup.
-    Returns a dict with 'title', 'description', and 'github_urls'.
-    """
-    url = f"https://www.youtube.com/watch?v={video_id}"
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        title_tag = soup.find("meta", property="og:title")
-        title = title_tag["content"] if title_tag else "Unknown Title"
-        
-        desc_tag = soup.find("meta", property="og:description")
-        description = desc_tag["content"] if desc_tag else "No description found."
-        
-        # Extract GitHub URLs from description
-        github_urls = re.findall(r"(https?://github\.com/[^\s]+)", description)
-        
-        return {
-            "title": title,
-            "description": description,
-            "github_urls": github_urls
-        }
+            return title, description, transcript_text
+
     except Exception as e:
-        print(f"Error fetching video details: {e}")
-        return {
-            "title": "Unknown Title",
-            "description": "Error fetching description.",
-            "github_urls": []
-        }
+        print(f"Error in yt-dlp: {e}")
+        return None, None, None
 
 # --- AI Agent ---
 
@@ -121,7 +133,6 @@ RULES
 - Do NOT merge sections together; each heading must be followed by its own content and then a blank line.
 - Use only top-3, most actionable ideas for this specific user.
 """
-
 
     try:
         response = model.generate_content(prompt)
@@ -201,21 +212,16 @@ def batch_job():
         # 4. Process Video
         print(f"  -> Processing new video...")
         url = url_match.group(0)
-        video_id = get_video_id(url)
         
-        if not video_id:
-            print("  -> Could not extract video ID.")
+        # Use yt-dlp to get everything
+        title, description, transcript = get_video_data(url)
+        
+        if not title or not transcript:
+            print("  -> Could not fetch video data or transcript.")
             continue
 
-        transcript = get_transcript(video_id)
-        if not transcript:
-            print("  -> Could not fetch transcript.")
-            continue
-
-        details = get_video_details(video_id)
-        title = details.get('title', 'Unknown')
-        description = details.get('description', '')
-        github_urls = details.get('github_urls', [])
+        # Extract GitHub URLs from description
+        github_urls = re.findall(r"(https?://github\.com/[^\s]+)", description)
         github_url = github_urls[0] if github_urls else "N/A"
 
         analysis = analyze_transcript(transcript, title, description, github_url)
@@ -237,4 +243,3 @@ def batch_job():
 
 if __name__ == "__main__":
     batch_job()
-

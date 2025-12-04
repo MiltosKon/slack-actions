@@ -29,6 +29,5 @@ jobs:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
+          echo "${{ secrets.YOUTUBE_COOKIES }}" > yt_cookies.txt
           python src/bot.py
-
-
