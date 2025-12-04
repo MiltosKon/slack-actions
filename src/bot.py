@@ -83,7 +83,7 @@ def analyze_transcript(transcript_text, video_title, video_description, github_u
 
     model = genai.GenerativeModel('gemini-2.5-flash')
 
-   prompt = f"""
+    prompt = f"""
 You are a senior QA Engineer and GitHub trends analyst, expert in API testing, automation, and SRE.
 
 Analyze the following GitHub-trends YouTube video and return a SHORT, SLACK-FRIENDLY message.
@@ -237,3 +237,4 @@ def batch_job():
 
 if __name__ == "__main__":
     batch_job()
+
