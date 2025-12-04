@@ -1,2 +1,7 @@
 requests
 xlsxwriter
+slack_bolt
+youtube_transcript_api
+google-generativeai
+python-dotenv
+beautifulsoup4
