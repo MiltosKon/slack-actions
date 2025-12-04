@@ -93,7 +93,7 @@ def analyze_transcript(transcript_text, video_title, video_description, github_u
     if not GEMINI_API_KEY:
         return "Error: GEMINI_API_KEY not found."
 
-    model = genai.GenerativeModel('gemini-3-pro-preview')
+    model = genai.GenerativeModel('gemini-2.5-flash')
 
     prompt = f"""
 You are a senior QA Engineer and GitHub trends analyst, expert in API testing, automation, and SRE.
@@ -243,4 +243,5 @@ def batch_job():
 
 if __name__ == "__main__":
     batch_job()
+
 
