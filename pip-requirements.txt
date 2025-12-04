@@ -2,6 +2,8 @@ requests
 xlsxwriter
 slack_bolt
 youtube_transcript_api
+yt-dlp
 google-generativeai
 python-dotenv
 beautifulsoup4
+
