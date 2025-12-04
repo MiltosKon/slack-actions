@@ -93,12 +93,12 @@ def analyze_transcript(transcript_text, video_title, video_description, github_u
     if not GEMINI_API_KEY:
         return "Error: GEMINI_API_KEY not found."
 
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-3-pro')
 
     prompt = f"""
 You are a senior QA Engineer and GitHub trends analyst, expert in API testing, automation, and SRE.
 
-Analyze the following GitHub-trends YouTube video and return a SHORT, SLACK-FRIENDLY message.
+Analyze the following GitHub-trends YouTube video and return a DETAILED, COMPREHENSIVE analysis.
 
 User context: Mid-senior QA at a sportsbook platform, building ReportPortal visualizers, Slack workflows, and IoT smart locks.
 
@@ -112,26 +112,26 @@ TRANSCRIPT (TRUNCATED)
 
 FORMAT YOUR ANSWER EXACTLY LIKE THIS (INCLUDING BLANK LINES):
 
-*Summary*
-[1-2 sentences max. No line breaks here.]
+*Detailed Summary*
+[Provide a comprehensive summary of the video's content, covering the main problem, the solution, and key technical details. 3-5 sentences.]
 
-*Key Takeaways & QA*
-- [Bullet 1 - max 1 line]
-- [Bullet 2 - max 1 line]
-- [Bullet 3 - max 1 line]
+*Key Takeaways & QA Applications*
+- [Deep dive into Point 1: Explain the technical concept and its relevance to QA/SRE.]
+- [Deep dive into Point 2: How can this be applied to API testing or automation?]
+- [Deep dive into Point 3: Specific benefits for a sportsbook/high-traffic platform.]
+- [Optional Point 4: Any other critical insight.]
 
-*Project Ideas*
-1. **Work repo automation:** [one sentence, focus on CI/CD, API testing, k6, ReportPortal]
-2. **Personal IoT:** [one sentence, focus side projects]
+*Actionable Project Ideas*
+1. **Work repo automation:** [Detailed idea. Explain HOW to implement it using the tools mentioned. Connect it to CI/CD, k6, or ReportPortal.]
+2. **Personal IoT/Side Project:** [Creative idea. Explain how to use this tech in a home lab or IoT context.]
 
 *GitHub repo link*
 {github_url or "N/A"}
 
 RULES
-- Max 180 words total.
-- Add a blank line between sections.
-- Do NOT merge sections together; each heading must be followed by its own content and then a blank line.
-- Use only top-3, most actionable ideas for this specific user.
+- No strict word limit, but keep it structured and readable.
+- Focus on *technical depth* and *implementation details*.
+- Explain *why* this matters for a Senior QA.
 """
 
     try:
