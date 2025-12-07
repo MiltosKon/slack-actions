@@ -1,11 +1,11 @@
 name: GitHub Trends Bot Schedule
 
-on:
-  schedule:
+#on:
+ # schedule:
     # Runs at minute 0 past every hour from 12 through 23 and 0 through 1 UTC
     # Covers 7am - 8pm EST (UTC-5)
-    - cron: '0 12-23,0-1 * * *'
-  workflow_dispatch:
+  #  - cron: '0 12-23,0-1 * * *'
+  #workflow_dispatch:
 
 jobs:
   poll_slack:
